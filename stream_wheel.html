@@ -1,223 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Wheel</title>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: transparent;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Wheel</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: transparent;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
 
-        .wheel-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            max-width: 600px;
-            aspect-ratio: 1 / 1;
-        }
+        .wheel-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 1 / 1;
+        }
 
-        #wheelCanvas {
-            width: 100%;
-            height: 100%;
-        }
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+        }
 
-        .prize-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 30%;
-            height: 30%;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 6px solid #f9fafb;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        }
+        .prize-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 6px solid #f9fafb;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
 
-        .prize-center img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .prize-center img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-        .controls {
-            width: 90%;
-            max-width: 500px;
-            background-color: rgba(31, 41, 55, 0.8);
-            backdrop-filter: blur(8px);
-            padding: 1.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 2rem;
-            margin-bottom: 2rem;
-        }
+        .controls {
+            width: 90%;
+            max-width: 500px;
+            background-color: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
 
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .input-group input {
-            flex-grow: 1;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            background-color: #374151;
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-            border: 2px solid transparent;
-        }
-        
-        .input-group input:focus {
-            border-color: #3b82f6;
-            ring: 2px;
-            ring-color: #3b82f6;
-        }
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .input-group input {
+            flex-grow: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #374151;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            border: 2px solid transparent;
+        }
+        
+        .input-group input:focus {
+            border-color: #3b82f6;
+            ring: 2px;
+            ring-color: #3b82f6;
+        }
 
-        button {
-            transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out;
-            padding: 0.5rem 1.5rem;
-            border-radius: 0.5rem;
-            color: #fff;
-            font-weight: 700;
-            cursor: pointer;
-            border: none;
-        }
+        button {
+            transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
 
-        button:active {
-            transform: scale(0.98);
-        }
+        button:active {
+            transform: scale(0.98);
+        }
 
-        #addNameBtn {
-            background-color: #2563eb;
-        }
-        
-        #addNameBtn:hover {
-            background-color: #1d4ed8;
-        }
+        #addNameBtn {
+            background-color: #2563eb;
+        }
+        
+        #addNameBtn:hover {
+            background-color: #1d4ed8;
+        }
 
-        #spinBtn {
-            background-color: #4f46e5;
-        }
-        
-        #spinBtn:hover {
-            background-color: #4338ca;
-        }
+        #spinBtn {
+            background-color: #4f46e5;
+        }
+        
+        #spinBtn:hover {
+            background-color: #4338ca;
+        }
 
-        #resetBtn {
-            background-color: #dc2626;
-        }
-        
-        #resetBtn:hover {
-            background-color: #b91c1c;
-        }
+        #resetBtn {
+            background-color: #dc2626;
+        }
+        
+        #resetBtn:hover {
+            background-color: #b91c1c;
+        }
 
-        .message-box {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #1f2937;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-            z-index: 100;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #1f2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
 
-        .message-box h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
+        .message-box h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
 
-        .participants-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
+        .participants-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
 
-        .participant-tag {
-            background-color: #374151;
-            color: #d1d5db;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-    </style>
+        .participant-tag {
+            background-color: #374151;
+            color: #d1d5db;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
 
 <div class="message-box" id="messageBox">
-    <h3 id="messageTitle"></h3>
-    <p id="messageText"></p>
-    <button id="closeMessageBtn" class="mt-4 px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 font-bold transition-all">OK</button>
+    <h3 id="messageTitle"></h3>
+    <p id="messageText"></p>
+    <button id="closeMessageBtn" class="mt-4 px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 font-bold transition-all">OK</button>
 </div>
 
 <div class="relative w-full h-full flex flex-col items-center justify-center">
-    <div class="wheel-container" id="wheelDisplay">
-        <canvas id="wheelCanvas"></canvas>
-        <div class="prize-center">
-            <img src="https://placehold.co/300x300/10b981/ffffff?text=Prize" alt="Prize" id="prizeImage">
-        </div>
-    </div>
-    
-    <div class="controls" id="controlsPanel">
-        <div class="flex flex-col md:flex-row gap-4 w-full">
-            <div class="flex-grow">
-                <label for="nameInput" class="text-sm font-medium text-gray-300">Add a Participant</label>
-                <div class="input-group mt-1">
-                    <input type="text" id="nameInput" placeholder="Enter name">
-                    <button id="addNameBtn">Add</button>
-                </div>
-            </div>
-            <div class="flex-grow">
-                <label class="text-sm font-medium text-gray-300 block">Controls</label>
-                <div class="flex gap-2 mt-1">
-                    <button id="spinBtn">Spin</button>
-                    <button id="resetBtn">Reset</button>
-                </div>
-            </div>
-        </div>
-        <div class="mt-4 text-center">
-            <p id="winningMessage" class="text-2xl font-bold text-teal-400"></p>
-        </div>
-        
-        <hr style="border-color: #4b5563; margin: 1rem 0;" />
-        
-        <div class="mt-4">
-            <label for="imageUpload" class="text-sm font-medium text-gray-300">Change Prize Image</label>
-            <input type="file" id="imageUpload" accept="image/png, image/jpeg">
-        </div>
+    <div class="wheel-container" id="wheelDisplay">
+        <canvas id="wheelCanvas"></canvas>
+        <div class="prize-center">
+            <img src="https://placehold.co/300x300/10b981/ffffff?text=Prize" alt="Prize" id="prizeImage">
+        </div>
+    </div>
+    
+    <div class="controls" id="controlsPanel">
+        <div class="flex flex-col md:flex-row gap-4 w-full">
+            <div class="flex-grow">
+                <label for="nameInput" class="text-sm font-medium text-gray-300">Add a Participant</label>
+                <div class="input-group mt-1">
+                    <input type="text" id="nameInput" placeholder="Enter name">
+                    <button id="addNameBtn">Add</button>
+                </div>
+            </div>
+            <div class="flex-grow">
+                <label class="text-sm font-medium text-gray-300 block">Controls</label>
+                <div class="flex gap-2 mt-1">
+                    <button id="spinBtn">Spin</button>
+                    <button id="resetBtn">Reset</button>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 text-center">
+            <p id="winningMessage" class="text-2xl font-bold text-teal-400"></p>
+        </div>
+        
+        <hr style="border-color: #4b5563; margin: 1rem 0;" />
+        
+        <div class="mt-4">
+            <label for="imageUpload" class="text-sm font-medium text-gray-300">Change Prize Image</label>
+            <input type="file" id="imageUpload" accept="image/png, image/jpeg">
+        </div>
 
-        <div class="mt-4">
-            <h4 class="text-sm font-medium text-gray-300">Current Participants</h4>
-            <div id="participantsList" class="participants-list">
-                </div>
-        </div>
-    </div>
+        <div class="mt-4">
+            <h4 class="text-sm font-medium text-gray-300">Current Participants</h4>
+            <div id="participantsList" class="participants-list">
+                </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -249,13 +249,12 @@
     let centerX, centerY;
     
     let isSpinning = false;
-    let isSpinningSlowly = true; 
-    const slowSpinSpeed = 0.005; 
     let currentAngle = 0;
     let spinSpeed = 0;
-    let friction = 0.99;
-    let targetAngle = 0;
-    let winningIndex = -1;
+    
+    let spinDuration = 15000; // 15 seconds in milliseconds
+    let slowDownStart = 9000; // 9 seconds in milliseconds
+    let spinStartTime = 0;
 
     // UI elements
     const nameInput = document.getElementById('nameInput');
@@ -404,20 +403,40 @@
     }
 
     // Animation loop
-    function animate() {
+    function animate(timestamp) {
+        if (!spinStartTime) spinStartTime = timestamp;
+        
+        const elapsedTime = timestamp - spinStartTime;
+        
         if (isSpinning) {
+            let friction;
+            if (elapsedTime < slowDownStart) {
+                // Fast spin
+                friction = 0.999;
+                spinSpeed += 0.001;
+            } else {
+                // Slow down
+                const slowDownTime = spinDuration - slowDownStart;
+                const timeRemaining = spinDuration - elapsedTime;
+                friction = 0.9 + (timeRemaining / slowDownTime) * 0.09;
+                if (friction > 0.999) friction = 0.999;
+            }
+
             spinSpeed *= friction;
             currentAngle += spinSpeed;
-            if (spinSpeed < 0.005) {
+            
+            if (elapsedTime >= spinDuration || spinSpeed < 0.0001) {
                 isSpinning = false;
                 spinSpeed = 0;
-                isSpinningSlowly = true; // Resume slow spin after fast spin
                 
-                // Find the winning participant
                 const finalAngle = (currentAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
                 const arcSize = (2 * Math.PI) / participants.length;
-                const normalizedAngle = (finalAngle + Math.PI / 2) % (2 * Math.PI); // Adjust for pointer position
-                winningIndex = Math.floor((2 * Math.PI - normalizedAngle) / arcSize);
+                const normalizedAngle = (finalAngle + Math.PI / 2) % (2 * Math.PI);
+                let winningIndex = Math.floor((2 * Math.PI - normalizedAngle) / arcSize);
+                
+                if (winningIndex >= participants.length) {
+                    winningIndex = participants.length - 1;
+                }
                 
                 if (winningIndex >= 0 && winningIndex < participants.length) {
                     const winnerName = participants[winningIndex].name;
@@ -427,9 +446,10 @@
                     winningMessage.textContent = '';
                 }
             }
-        } else if (isSpinningSlowly) {
-            currentAngle += slowSpinSpeed;
+        } else {
+            currentAngle += 0.001; // Slow spin when not active
         }
+        
         drawWheel();
         requestAnimationFrame(animate);
     }
@@ -452,8 +472,8 @@
             return;
         }
         isSpinning = true;
-        isSpinningSlowly = false; // Stop slow spin for fast spin
-        spinSpeed = Math.random() * 0.1 + 0.1; // Random initial speed
+        spinSpeed = 0.5;
+        spinStartTime = performance.now();
         winningMessage.textContent = 'Spinning...';
     }
 
@@ -477,6 +497,7 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             prizeImageSrc = e.target.result;
+            prizeImage.src = prizeImageSrc; // Update image instantly
             sendDataToServer();
             showMessage('Success!', 'Prize image updated!');
         };
