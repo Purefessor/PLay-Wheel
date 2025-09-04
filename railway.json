@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "name": "my-stream-wheel",
+  "services": [
+    {
+      "name": "web",
+      "volumes": [
+        {
+          "name": "data",
+          "path": "/mnt/data"
+        }
+      ]
+    }
+  ]
+}
