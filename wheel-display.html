@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Wheel Display</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: transparent;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wheel-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 1 / 1;
+        }
+
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .prize-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 6px solid #f9fafb;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .prize-center img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #winningMessage {
+            position: absolute;
+            bottom: 2rem;
+            width: 90%;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4b5563; /* Change this color for visibility if needed */
+            text-shadow: 2px 2px 4px #000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="relative w-full h-full flex flex-col items-center justify-center">
+    <div class="wheel-container" id="wheelDisplay">
+        <canvas id="wheelCanvas"></canvas>
+        <div class="prize-center">
+            <img src="https://placehold.co/300x300/10b981/ffffff?text=Prize" alt="Prize" id="prizeImage">
+        </div>
+    </div>
+    
+    <p id="winningMessage"></p>
+</div>
+
+<script>
+    const wheelChannel = new BroadcastChannel('stream-wheel-channel');
+    let participants = [];
+    let prizeImageSrc = 'https://placehold.co/300x300/10b981/ffffff?text=Prize';
+
+    // Canvas and drawing variables
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const wheelSize = 500;
+    const padding = 20;
+    let wheelRadius;
+    let centerX, centerY;
+    
+    let isSpinning = false;
+    let isSpinningSlowly = true; 
+    const slowSpinSpeed = 0.005; 
+    let currentAngle = 0;
+    let spinSpeed = 0;
+    let friction = 0.99;
+    let targetAngle = 0;
+    let winningIndex = -1;
+
+    // UI elements
+    const winningMessage = document.getElementById('winningMessage');
+    const prizeImage = document.getElementById('prizeImage');
+    
+    const colors = [
+        '#E74C3C', '#F39C12', '#F1C40F', '#2ECC71', '#3498DB', 
+        '#9B59B6', '#34495E', '#1ABC9C', '#2980B9', '#8E44AD'
+    ];
+
+    // Helper to get a consistent color for each name
+    function getColorForName(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const index = Math.abs(hash) % colors.length;
+        return colors[index];
+    }
+
+    // Drawing functions
+    function drawWheel() {
+        if (!participants.length) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            winningMessage.textContent = 'Add participants to spin the wheel!';
+            return;
+        }
+
+        const arcSize = (2 * Math.PI) / participants.length;
+        let startAngle = currentAngle;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the segments
+        participants.forEach((p, i) => {
+            const endAngle = startAngle + arcSize;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, wheelRadius, startAngle, endAngle);
+            ctx.lineTo(centerX, centerY);
+            ctx.closePath();
+            ctx.fillStyle = getColorForName(p.name);
+            ctx.fill();
+            
+            // Draw the text
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(startAngle + arcSize / 2);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#1f2937';
+            ctx.font = 'bold 16px Inter, sans-serif';
+            ctx.fillText(p.name, wheelRadius - 20, 0);
+            ctx.restore();
+            
+            // Draw segment divider
+            ctx.strokeStyle = '#2d3748';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(
+                centerX + wheelRadius * Math.cos(startAngle),
+                centerY + wheelRadius * Math.sin(startAngle)
+            );
+            ctx.stroke();
+
+            startAngle = endAngle;
+        });
+
+        // Draw the outer wheel border
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, wheelRadius, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#4b5563';
+        ctx.lineWidth = 10;
+        ctx.stroke();
+
+        // Draw the pointer
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(-Math.PI / 2); // Pointing up
+        ctx.beginPath();
+        ctx.moveTo(0, -(wheelRadius + 10));
+        ctx.lineTo(-15, -(wheelRadius - 10));
+        ctx.lineTo(15, -(wheelRadius - 10));
+        ctx.closePath();
+        ctx.fillStyle = '#f56565';
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    // Animation loop
+    function animate() {
+        if (isSpinning) {
+            spinSpeed *= friction;
+            currentAngle += spinSpeed;
+            if (spinSpeed < 0.005) {
+                isSpinning = false;
+                spinSpeed = 0;
+                isSpinningSlowly = true; // Resume slow spin after fast spin
+                
+                // Find the winning participant
+                const finalAngle = (currentAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                const arcSize = (2 * Math.PI) / participants.length;
+                const normalizedAngle = (finalAngle + Math.PI / 2) % (2 * Math.PI); // Adjust for pointer position
+                winningIndex = Math.floor((2 * Math.PI - normalizedAngle) / arcSize);
+                
+                if (winningIndex >= 0 && winningIndex < participants.length) {
+                    const winnerName = participants[winningIndex].name;
+                    winningMessage.textContent = `Winner: ${winnerName}!`;
+                } else {
+                    winningMessage.textContent = '';
+                }
+            }
+        } else if (isSpinningSlowly) {
+            currentAngle += slowSpinSpeed;
+        }
+        drawWheel();
+        requestAnimationFrame(animate);
+    }
+
+    // Initial state setup and event listeners
+    function resizeCanvas() {
+        const container = document.querySelector('.wheel-container');
+        const containerSize = Math.min(container.offsetWidth, container.offsetHeight);
+        canvas.width = containerSize;
+        canvas.height = containerSize;
+        wheelRadius = (containerSize / 2) - padding;
+        centerX = canvas.width / 2;
+        centerY = canvas.height / 2;
+        drawWheel();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    window.onload = function() {
+        resizeCanvas();
+        animate();
+    };
+
+    // Listen for messages from the control panel
+    wheelChannel.onmessage = function(event) {
+        const { type, payload } = event.data;
+        switch(type) {
+            case 'add-participant':
+                participants.push({ name: payload.name });
+                break;
+            case 'spin':
+                if (isSpinning || participants.length === 0) return;
+                isSpinning = true;
+                isSpinningSlowly = false;
+                spinSpeed = Math.random() * 0.1 + 0.1;
+                winningMessage.textContent = 'Spinning...';
+                break;
+            case 'reset':
+                if (isSpinning) return;
+                participants = [];
+                winningMessage.textContent = 'Wheel has been reset.';
+                break;
+            case 'update-image':
+                prizeImage.src = payload.imageSrc;
+                break;
+        }
+        drawWheel();
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Wheel</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: transparent;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wheel-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 1 / 1;
+        }
+
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .prize-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 6px solid #f9fafb;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .prize-center img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .controls {
+            width: 90%;
+            max-width: 500px;
+            background-color: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .input-group input {
+            flex-grow: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #374151;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            border: 2px solid transparent;
+        }
+        
+        .input-group input:focus {
+            border-color: #3b82f6;
+            ring: 2px;
+            ring-color: #3b82f6;
+        }
+
+        button {
+            transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #addNameBtn {
+            background-color: #2563eb;
+        }
+        
+        #addNameBtn:hover {
+            background-color: #1d4ed8;
+        }
+
+        #spinBtn {
+            background-color: #4f46e5;
+        }
+        
+        #spinBtn:hover {
+            background-color: #4338ca;
+        }
+
+        #resetBtn {
+            background-color: #dc2626;
+        }
+        
+        #resetBtn:hover {
+            background-color: #b91c1c;
+        }
+
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #1f2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .message-box h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .participants-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .participant-tag {
+            background-color: #374151;
+            color: #d1d5db;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="message-box" id="messageBox">
+    <h3 id="messageTitle"></h3>
+    <p id="messageText"></p>
+    <button id="closeMessageBtn" class="mt-4 px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 font-bold transition-all">OK</button>
+</div>
+
+<div class="relative w-full h-full flex flex-col items-center justify-center">
+    <div class="wheel-container" id="wheelDisplay">
+        <canvas id="wheelCanvas"></canvas>
+        <div class="prize-center">
+            <img src="https://placehold.co/300x300/10b981/ffffff?text=Prize" alt="Prize" id="prizeImage">
+        </div>
+    </div>
+    
+    <div class="controls" id="controlsPanel">
+        <div class="flex flex-col md:flex-row gap-4 w-full">
+            <div class="flex-grow">
+                <label for="nameInput" class="text-sm font-medium text-gray-300">Add a Participant</label>
+                <div class="input-group mt-1">
+                    <input type="text" id="nameInput" placeholder="Enter name">
+                    <button id="addNameBtn">Add</button>
+                </div>
+            </div>
+            <div class="flex-grow">
+                <label class="text-sm font-medium text-gray-300 block">Controls</label>
+                <div class="flex gap-2 mt-1">
+                    <button id="spinBtn">Spin</button>
+                    <button id="resetBtn">Reset</button>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 text-center">
+            <p id="winningMessage" class="text-2xl font-bold text-teal-400"></p>
+        </div>
+        
+        <hr style="border-color: #4b5563; margin: 1rem 0;" />
+        
+        <div class="mt-4">
+            <label for="imageUpload" class="text-sm font-medium text-gray-300">Change Prize Image</label>
+            <input type="file" id="imageUpload" accept="image/png, image/jpeg">
+        </div>
+
+        <div class="mt-4">
+            <h4 class="text-sm font-medium text-gray-300">Current Participants</h4>
+            <div id="participantsList" class="participants-list">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let participants = [];
+    let prizeImageSrc = 'https://placehold.co/300x300/10b981/ffffff?text=Prize';
+
+    // UI elements
+    const messageBox = document.getElementById('messageBox');
+    const messageTitle = document.getElementById('messageTitle');
+    const messageText = document.getElementById('messageText');
+    const closeMessageBtn = document.getElementById('closeMessageBtn');
+
+    function showMessage(title, text) {
+        messageTitle.textContent = title;
+        messageText.textContent = text;
+        messageBox.style.display = 'flex';
+    }
+
+    closeMessageBtn.addEventListener('click', () => {
+        messageBox.style.display = 'none';
+    });
+    
+    // Canvas and drawing variables
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const wheelSize = 500;
+    const padding = 20;
+    let wheelRadius;
+    let centerX, centerY;
+    
+    let isSpinning = false;
+    let isSpinningSlowly = true; 
+    const slowSpinSpeed = 0.005; 
+    let currentAngle = 0;
+    let spinSpeed = 0;
+    let friction = 0.99;
+    let targetAngle = 0;
+    let winningIndex = -1;
+
+    // UI elements
+    const nameInput = document.getElementById('nameInput');
+    const addNameBtn = document.getElementById('addNameBtn');
+    const spinBtn = document.getElementById('spinBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const winningMessage = document.getElementById('winningMessage');
+    const prizeImage = document.getElementById('prizeImage');
+    const imageUpload = document.getElementById('imageUpload');
+    const participantsList = document.getElementById('participantsList');
+    
+    // New color generation logic
+    const colors = Array.from({ length: 60 }, (_, i) => `hsl(${i * (360 / 60)}, 80%, 60%)`);
+
+    // Helper to get a consistent color for each name
+    function getColorForName(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const index = Math.abs(hash) % colors.length;
+        return colors[index];
+    }
+
+    // Drawing functions
+    function drawWheel() {
+        if (!participants.length) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            winningMessage.textContent = 'Add participants to spin the wheel!';
+            return;
+        }
+
+        const arcSize = (2 * Math.PI) / participants.length;
+        let startAngle = currentAngle;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the segments
+        participants.forEach((p, i) => {
+            const endAngle = startAngle + arcSize;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, wheelRadius, startAngle, endAngle);
+            ctx.lineTo(centerX, centerY);
+            ctx.closePath();
+            ctx.fillStyle = getColorForName(p.name);
+            ctx.fill();
+            
+            // Draw the text
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(startAngle + arcSize / 2);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#1f2937';
+            ctx.font = 'bold 16px Inter, sans-serif';
+            ctx.fillText(p.name, wheelRadius - 20, 0);
+            ctx.restore();
+            
+            // Draw segment divider
+            ctx.strokeStyle = '#2d3748';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(
+                centerX + wheelRadius * Math.cos(startAngle),
+                centerY + wheelRadius * Math.sin(startAngle)
+            );
+            ctx.stroke();
+
+            startAngle = endAngle;
+        });
+
+        // Draw the outer wheel border
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, wheelRadius, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#4b5563';
+        ctx.lineWidth = 10;
+        ctx.stroke();
+
+        // Draw the pointer
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(-Math.PI / 2); // Pointing up
+        ctx.beginPath();
+        ctx.moveTo(0, -(wheelRadius + 10));
+        ctx.lineTo(-15, -(wheelRadius - 10));
+        ctx.lineTo(15, -(wheelRadius - 10));
+        ctx.closePath();
+        ctx.fillStyle = '#f56565';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Function to update the on-screen participant list
+    function updateParticipantList() {
+        participantsList.innerHTML = ''; // Clear the list
+        participants.forEach(p => {
+            const span = document.createElement('span');
+            span.textContent = p.name;
+            span.className = 'participant-tag';
+            participantsList.appendChild(span);
+        });
+    }
+
+    // Function to send all data to the server
+    async function sendDataToServer() {
+        try {
+            const dataToSave = {
+                participants: participants,
+                prizeImageSrc: prizeImageSrc
+            };
+            await fetch('/update_participants', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataToSave)
+            });
+        } catch (error) {
+            console.error('Failed to send data to server:', error);
+        }
+    }
+    
+    // Function to fetch and update all data
+    async function fetchDataFromServer() {
+        try {
+            const response = await fetch('/data.json');
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update participants only if they have changed
+                if (JSON.stringify(data.participants) !== JSON.stringify(participants)) {
+                    participants = data.participants;
+                    updateParticipantList();
+                }
+
+                // Update image source only if it has changed
+                if (data.prizeImageSrc !== prizeImageSrc) {
+                    prizeImageSrc = data.prizeImageSrc;
+                    prizeImage.src = prizeImageSrc;
+                }
+                drawWheel();
+            }
+        } catch (error) {
+            console.error('Failed to fetch data from server:', error);
+        }
+    }
+
+    // Animation loop
+    function animate() {
+        if (isSpinning) {
+            spinSpeed *= friction;
+            currentAngle += spinSpeed;
+            if (spinSpeed < 0.005) {
+                isSpinning = false;
+                spinSpeed = 0;
+                isSpinningSlowly = true; // Resume slow spin after fast spin
+                
+                // Find the winning participant
+                const finalAngle = (currentAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                const arcSize = (2 * Math.PI) / participants.length;
+                const normalizedAngle = (finalAngle + Math.PI / 2) % (2 * Math.PI); // Adjust for pointer position
+                winningIndex = Math.floor((2 * Math.PI - normalizedAngle) / arcSize);
+                
+                if (winningIndex >= 0 && winningIndex < participants.length) {
+                    const winnerName = participants[winningIndex].name;
+                    winningMessage.textContent = `Winner: ${winnerName}!`;
+                    showMessage('Congratulations!', `The winner is ${winnerName}!`);
+                } else {
+                    winningMessage.textContent = '';
+                }
+            }
+        } else if (isSpinningSlowly) {
+            currentAngle += slowSpinSpeed;
+        }
+        drawWheel();
+        requestAnimationFrame(animate);
+    }
+
+    // Button event handlers
+    function handleAddName() {
+        const name = nameInput.value.trim();
+        if (name) {
+            participants.push({ name: name });
+            nameInput.value = '';
+            updateParticipantList();
+            showMessage('Participant Added', `${name} has been added to the wheel.`);
+            sendDataToServer();
+        }
+    }
+
+    function handleSpin() {
+        if (isSpinning || participants.length === 0) {
+            showMessage('Cannot Spin', participants.length === 0 ? 'Add participants before spinning.' : 'The wheel is already spinning.');
+            return;
+        }
+        isSpinning = true;
+        isSpinningSlowly = false; // Stop slow spin for fast spin
+        spinSpeed = Math.random() * 0.1 + 0.1; // Random initial speed
+        winningMessage.textContent = 'Spinning...';
+    }
+
+    function handleReset() {
+        if (isSpinning) {
+            showMessage('Cannot Reset', 'The wheel is currently spinning. Wait until it stops.');
+            return;
+        }
+        participants = [];
+        winningMessage.textContent = 'Wheel has been reset.';
+        updateParticipantList();
+        showMessage('Reset Complete', 'The wheel has been cleared of all participants.');
+        sendDataToServer();
+    }
+    
+    // Image upload handler
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            prizeImageSrc = e.target.result;
+            sendDataToServer();
+            showMessage('Success!', 'Prize image updated!');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Initial state setup and event listeners
+    function resizeCanvas() {
+        const container = document.querySelector('.wheel-container');
+        const containerSize = Math.min(container.offsetWidth, container.offsetHeight);
+        canvas.width = containerSize;
+        canvas.height = containerSize;
+        wheelRadius = (containerSize / 2) - padding;
+        centerX = canvas.width / 2;
+        centerY = canvas.height / 2;
+        drawWheel();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    window.onload = function() {
+        resizeCanvas();
+        animate();
+        // Poll the server for updates every second
+        setInterval(fetchDataFromServer, 1000); 
+    };
+
+    addNameBtn.addEventListener('click', handleAddName);
+    nameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            handleAddName();
+        }
+    });
+    spinBtn.addEventListener('click', handleSpin);
+    resetBtn.addEventListener('click', handleReset);
+    imageUpload.addEventListener('change', handleImageUpload);
+</script>
+</body>
+</html>

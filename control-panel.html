@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Wheel Controls</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 2rem;
+        }
+
+        .controls {
+            width: 90%;
+            max-width: 500px;
+            background-color: #1f2937;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .input-group input {
+            flex-grow: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #374151;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            border: 2px solid transparent;
+        }
+        
+        .input-group input:focus {
+            border-color: #3b82f6;
+            ring: 2px;
+            ring-color: #3b82f6;
+        }
+
+        button {
+            transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #addNameBtn {
+            background-color: #2563eb;
+        }
+        
+        #addNameBtn:hover {
+            background-color: #1d4ed8;
+        }
+
+        #spinBtn {
+            background-color: #4f46e5;
+        }
+        
+        #spinBtn:hover {
+            background-color: #4338ca;
+        }
+
+        #resetBtn {
+            background-color: #dc2626;
+        }
+        
+        #resetBtn:hover {
+            background-color: #b91c1c;
+        }
+        
+        #imageUpload {
+            display: block;
+            width: 100%;
+            text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100;
+        }
+
+        .participants-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .participant-tag {
+            background-color: #374151;
+            color: #d1d5db;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls" id="controlsPanel">
+    <div class="flex flex-col md:flex-row gap-4 w-full">
+        <div class="flex-grow">
+            <label for="nameInput" class="text-sm font-medium text-gray-300">Add a Participant</label>
+            <div class="input-group mt-1">
+                <input type="text" id="nameInput" placeholder="Enter name">
+                <button id="addNameBtn">Add</button>
+            </div>
+        </div>
+        <div class="flex-grow">
+            <label class="text-sm font-medium text-gray-300 block">Controls</label>
+            <div class="flex gap-2 mt-1">
+                <button id="spinBtn">Spin</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <hr style="border-color: #4b5563; margin: 1rem 0;" />
+    
+    <div>
+        <label for="imageUpload" class="text-sm font-medium text-gray-300">Change Prize Image</label>
+        <input type="file" id="imageUpload" accept="image/png, image/jpeg">
+    </div>
+
+    <div>
+        <h4 class="text-sm font-medium text-gray-300">Current Participants</h4>
+        <div id="participantsList" class="participants-list">
+            </div>
+    </div>
+</div>
+
+<script>
+    const wheelChannel = new BroadcastChannel('stream-wheel-channel');
+    const participantsList = document.getElementById('participantsList');
+    const nameInput = document.getElementById('nameInput');
+    const addNameBtn = document.getElementById('addNameBtn');
+    const spinBtn = document.getElementById('spinBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const imageUpload = document.getElementById('imageUpload');
+
+    let participants = [];
+
+    function updateParticipantsDisplay() {
+        participantsList.innerHTML = '';
+        participants.forEach(p => {
+            const span = document.createElement('span');
+            span.textContent = p.name;
+            span.className = 'participant-tag';
+            participantsList.appendChild(span);
+        });
+    }
+
+    addNameBtn.addEventListener('click', () => {
+        const name = nameInput.value.trim();
+        if (name) {
+            participants.push({ name: name });
+            nameInput.value = '';
+            updateParticipantsDisplay();
+            wheelChannel.postMessage({ type: 'add-participant', payload: { name: name } });
+        }
+    });
+
+    nameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addNameBtn.click();
+        }
+    });
+
+    spinBtn.addEventListener('click', () => {
+        wheelChannel.postMessage({ type: 'spin' });
+    });
+
+    resetBtn.addEventListener('click', () => {
+        participants = [];
+        updateParticipantsDisplay();
+        wheelChannel.postMessage({ type: 'reset' });
+    });
+
+    imageUpload.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            wheelChannel.postMessage({ type: 'update-image', payload: { imageSrc: e.target.result } });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Handle messages from the display channel (if needed, e.g., to sync state)
+    // You could use this to receive updates from the wheel-display.html
+    wheelChannel.onmessage = function(event) {
+        const { type, payload } = event.data;
+        if (type === 'state-sync') {
+            participants = payload.participants;
+            updateParticipantsDisplay();
+        }
+    };
+</script>
+</body>
+</html>
